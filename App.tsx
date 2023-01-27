@@ -8,17 +8,16 @@ import { View } from 'react-native';
 import AppLoading from './AppLoading';
 
 const App = () => {
-	const [assetsLoaded, setAssetsLoaded] = useState(false);
+    const [assetsLoaded, setAssetsLoaded] = useState(false);
 
-	if (!assetsLoaded)
-		return <AppLoading onFinish={() => setAssetsLoaded(true)} />;
+    if (!assetsLoaded) return <AppLoading onFinish={() => setAssetsLoaded(true)} />;
 
-	return (
-		<Router>
-			<StatusBar style='auto' />
-			<MainTabScreen />
-		</Router>
-	);
+    return (
+        <Router>
+            <StatusBar style="auto" />
+            <MainTabScreen />
+        </Router>
+    );
 };
 
 export default App;

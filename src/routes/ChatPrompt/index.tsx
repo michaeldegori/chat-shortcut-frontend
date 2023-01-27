@@ -1,44 +1,97 @@
-import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
 	StyleSheet,
 	Text,
 	View,
-	Pressable,
 	TextInput,
-	SafeAreaView,
 	ScrollView,
+	KeyboardAvoidingView,
+	Platform,
 } from 'react-native';
-import { SERVER_URI } from '../../../config';
+import { SERVER_URL } from '../../../config';
 import Loading from '../../../Loading';
 import { useForm, Controller } from 'react-hook-form';
 import { Colors, Spacing, Type } from '../../../styles';
 import Button from '../../components/Button';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Header from '../../components/Header';
 
 const ChatPrompt = () => {
 	const [loading, setLoading] = useState(false);
 	const [chatResponse, setChatResponse] = useState('');
+	const [chatMemory, setChatMemory] = useState('');
 
 	const {
 		control,
 		handleSubmit,
-		formState: { errors },
+		formState: { errors, isSubmitSuccessful },
+		reset,
+		getValues,
 	} = useForm({
 		defaultValues: {
 			prompt: '',
+			chatMemory,
 		},
 	});
 
-	const onSubmit = async ({ prompt }) => {
-		console.log({ prompt });
+	useEffect(() => {
+		// AsyncStorage.removeItem('chatMemory');
+		const { prompt } = getValues();
+
+		console.log({ chatMemory });
+	});
+
+	// Retrieving the chat memory fromAsync storage on first render
+	useEffect(() => {
+		if (isSubmitSuccessful) {
+			reset({ prompt: '' });
+		}
+
+		const retrieveChatMemoryFromStorage = async () => {
+			try {
+				const memoryString: string | null = await AsyncStorage.getItem(
+					'chatMemory'
+				);
+				if (memoryString !== null) {
+					const memory = JSON.parse(memoryString);
+					setChatMemory(memory);
+				}
+			} catch (error: unknown) {
+				console.error(error);
+				alert(error);
+			}
+		};
+
+		retrieveChatMemoryFromStorage();
+	}, [isSubmitSuccessful]);
+
+	const addChatToStorage = async (chat: string) => {
+		if (typeof chatMemory === null) {
+			setChatMemory('');
+		}
+		await AsyncStorage.setItem(
+			'chatMemory',
+			JSON.stringify(chatMemory + chat)
+		);
+	};
+
+	const onSubmit = async ({
+		prompt,
+		chatMemory,
+	}: {
+		prompt: string;
+		chatMemory: string;
+	}) => {
 		try {
 			setLoading(true);
-			const response = await fetch(`${SERVER_URI}/chatgpt/query`, {
+			await addChatToStorage(`\nUser: ${prompt}`);
+
+			const response = await fetch(`${SERVER_URL}/chatgpt/query`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ query: prompt }),
+				body: JSON.stringify({ query: prompt, chatMemory }),
 			});
 
 			const data = await response.json();
@@ -51,61 +104,78 @@ const ChatPrompt = () => {
 				);
 			}
 
-			// for some reason, the first character of response is a space, so we slice it out
+			// for some reason, the first character of response is a space, so we trim the string
 			setChatResponse(result.trim());
-			console.log({ chatResponse });
+			await addChatToStorage(`\nDaVinci-003: ${chatResponse}`);
 		} catch (error) {
 			console.error(error);
-			alert(error.message);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	if (!!loading) {
-		return <Loading />;
-	}
 	return (
-		<View style={styles.container}>
-			<Text style={styles.heading}>
-				{!!chatResponse
-					? 'Look at this nice response:'
-					: 'Hey, you should ask me a Q'}
-			</Text>
-			{!!chatResponse && (
-				<ScrollView contentContainerStyle={styles.responseContainer}>
-					<Text style={styles.responseText}>{chatResponse}</Text>
-				</ScrollView>
-			)}
-			<View>
-				<View style={styles.form}>
-					<Controller
-						control={control}
-						rules={{
-							required: true,
-						}}
-						render={({ field: { onChange, onBlur, value } }) => {
-							return (
-								<TextInput
-									multiline
-									onBlur={onBlur}
-									onChangeText={onChange}
-									value={value}
-									style={styles.textInput}
-								/>
-							);
-						}}
-						name='prompt'
+		<>
+			<Header title='Brainstorm Buddy' />
+			<KeyboardAvoidingView
+				behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+				style={styles.container}
+				keyboardVerticalOffset={Spacing.sm}
+			>
+				<Text style={styles.heading}>
+					{chatResponse ? 'Ta da!' : 'Hey, ask me something!'}
+				</Text>
+				{loading && <Loading />}
+				{!!chatResponse && !loading && (
+					<ScrollView
+						style={styles.scrollView}
+						contentContainerStyle={styles.responseContainer}
+					>
+						<Text style={styles.responseText}>{chatResponse}</Text>
+					</ScrollView>
+				)}
+				<View>
+					<View style={styles.form}>
+						<Controller
+							control={control}
+							rules={{
+								required: true,
+							}}
+							render={({
+								field: { onChange, onBlur, value },
+							}) => {
+								return (
+									<TextInput
+										multiline
+										autoFocus
+										blurOnSubmit
+										onBlur={onBlur}
+										onChangeText={onChange}
+										onFocus={() => {}}
+										value={value}
+										style={styles.textInput}
+										returnKeyType='go'
+										placeholder='Ask me anything...'
+									/>
+								);
+							}}
+							name='prompt'
+						/>
+						{errors.prompt && (
+							<Text style={styles.errorText}>
+								I can't very well answer a question you haven't
+								asked...
+							</Text>
+						)}
+					</View>
+					<Button
+						label='Ask'
+						onPress={handleSubmit(onSubmit)}
+						disabled={loading}
 					/>
-					{errors.prompt && (
-						<Text style={styles.errorText}>
-							I can't very well answer a question you haven't asked...
-						</Text>
-					)}
 				</View>
-				<Button label='Do Backend Stuff' onPress={handleSubmit(onSubmit)} />
-			</View>
-		</View>
+			</KeyboardAvoidingView>
+		</>
 	);
 };
 
@@ -120,15 +190,19 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 	},
 	heading: {
-		fontSize: Type.lg,
+		fontSize: Type.xl,
 		marginTop: Spacing.md,
+		fontFamily: 'Orange Juice',
+	},
+	scrollView: {
+		marginVertical: Spacing.md,
+		borderRadius: 5,
 	},
 	responseContainer: {
 		flexGrow: 1,
 		justifyContent: 'center',
 		width: Spacing.paddingWidth,
 		alignSelf: 'center',
-		marginVertical: Spacing.md,
 	},
 	responseText: {
 		padding: Spacing.md,

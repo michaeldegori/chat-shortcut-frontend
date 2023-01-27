@@ -6,6 +6,7 @@ const type = {
 	md: 17,
 	lg: 22,
 	xl: 29,
+	xxl: 38,
 	subHeading: {
 		fontSize: 22,
 		fontFamily: 'Poppins Bold',

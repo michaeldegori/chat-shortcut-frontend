@@ -4,7 +4,7 @@ import { Spacing, Type } from '../../styles';
 const Header = ({ title }: { title: string }) => {
     return (
         <View>
-            <Text>{title}</Text>
+            <Text style={styles.title}>{title}</Text>
         </View>
     );
 };

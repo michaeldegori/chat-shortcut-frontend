@@ -5,7 +5,7 @@ const ios = Platform.OS === 'ios';
 
 const shadows = StyleSheet.create({
     tile: {
-        shadowColor: Colors.kkNavy,
+        shadowColor: Colors.black,
         shadowRadius: 6,
         shadowOffset: {
             width: -3,
@@ -15,7 +15,7 @@ const shadows = StyleSheet.create({
         ...(!ios && { elevation: 3 }),
     },
     icon: {
-        shadowColor: Colors.kkNavy,
+        shadowColor: Colors.black,
         shadowRadius: 2,
         shadowOffset: {
             width: 0,
@@ -24,16 +24,8 @@ const shadows = StyleSheet.create({
         shadowOpacity: 0.4,
         ...(!ios && { elevation: 2 }),
     },
-    text: {
-        textShadowColor: Colors.kkOrange,
-        textShadowRadius: 3,
-        textShadowOffset: {
-            width: 0,
-            height: 0,
-        },
-    },
     button: {
-        shadowColor: Colors.kkNavy,
+        shadowColor: Colors.black,
         shadowRadius: 4,
         shadowOpacity: 0.4,
         shadowOffset: {

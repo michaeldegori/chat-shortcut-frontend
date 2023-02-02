@@ -21,7 +21,7 @@ const ChatPrompt = () => {
     } = useForm({
         defaultValues: {
             prompt: '',
-            chatMemory: 'potato',
+            // chatMemory: 'potato',
         },
     });
 

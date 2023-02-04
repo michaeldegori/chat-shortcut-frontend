@@ -26,7 +26,7 @@ const ChatPrompt = () => {
     });
 
     useEffect(() => {
-        // AsyncStorage.removeItem('chatMemory');
+        AsyncStorage.removeItem('chatMemory');
         const { prompt } = getValues();
 
         console.log({ prompt, url: process.env.SERVER_URL });
